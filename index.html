@@ -2,82 +2,132 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐷 Bigcoin - Laad de Biggen!</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🐷 Bigcoin - Van Varken tot BBQ!</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #87CEEB 0%, #98FB98 100%);
             min-height: 100vh;
+            min-height: -webkit-fill-available;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
+            padding: 10px;
+            overflow-x: hidden;
+            touch-action: manipulation;
         }
 
         h1 {
             color: #8B4513;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            margin-bottom: 10px;
-            font-size: 2.5em;
+            margin-bottom: 5px;
+            font-size: clamp(1.5em, 5vw, 2.5em);
+            text-align: center;
         }
 
-        .subtitle {
+        .level-title {
             color: #556B2F;
-            margin-bottom: 20px;
-            font-size: 1.2em;
+            margin-bottom: 8px;
+            font-size: clamp(0.9em, 3vw, 1.2em);
+            text-align: center;
+            font-weight: bold;
         }
 
         .game-info {
             display: flex;
-            gap: 30px;
-            margin-bottom: 15px;
-            font-size: 1.3em;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: clamp(0.8em, 2.5vw, 1.1em);
             color: #2F4F4F;
+            width: 100%;
+            max-width: 600px;
         }
 
         .game-info span {
-            background: rgba(255,255,255,0.8);
-            padding: 10px 20px;
-            border-radius: 10px;
+            background: rgba(255,255,255,0.9);
+            padding: 8px 12px;
+            border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            white-space: nowrap;
+        }
+
+        .level-indicator {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .level-dot {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .level-dot.completed {
+            background: linear-gradient(145deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .level-dot.current {
+            background: linear-gradient(145deg, #FFD700, #FFA500);
+            color: #8B4513;
+            transform: scale(1.2);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+        }
+
+        .level-dot.locked {
+            background: #ccc;
+            color: #888;
         }
 
         #gameCanvas {
             border: 4px solid #8B4513;
-            border-radius: 15px;
+            border-radius: 10px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-            cursor: grab;
-            background: #90EE90;
-        }
-
-        #gameCanvas:active {
-            cursor: grabbing;
+            cursor: pointer;
+            max-width: 100%;
+            height: auto;
+            touch-action: none;
         }
 
         .buttons {
-            margin-top: 20px;
+            margin-top: 15px;
             display: flex;
-            gap: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
         }
 
         button {
-            padding: 15px 30px;
-            font-size: 1.2em;
+            padding: 12px 24px;
+            font-size: clamp(0.9em, 2.5vw, 1.1em);
             border: none;
             border-radius: 10px;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
             font-weight: bold;
+            touch-action: manipulation;
         }
 
-        button:hover {
+        button:hover, button:active {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
@@ -93,610 +143,1230 @@
         }
 
         .instructions {
-            margin-top: 20px;
-            background: rgba(255,255,255,0.9);
-            padding: 15px 25px;
+            margin-top: 15px;
+            background: rgba(255,255,255,0.95);
+            padding: 12px 20px;
             border-radius: 10px;
-            max-width: 600px;
+            max-width: 95%;
+            width: 500px;
             text-align: center;
             color: #333;
+            font-size: clamp(0.85em, 2.5vw, 1em);
         }
 
         .highscore {
-            margin-top: 15px;
+            margin-top: 10px;
             background: linear-gradient(145deg, #FFD700, #FFA500);
-            padding: 10px 20px;
+            padding: 8px 16px;
             border-radius: 10px;
             font-weight: bold;
             color: #8B4513;
+            font-size: clamp(0.85em, 2.5vw, 1em);
         }
 
-        .win-message {
+        .modal {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-content {
             background: linear-gradient(145deg, #4CAF50, #8BC34A);
             color: white;
-            padding: 40px 60px;
+            padding: 30px;
             border-radius: 20px;
-            font-size: 1.5em;
             text-align: center;
             box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-            z-index: 1000;
-            display: none;
+            max-width: 90%;
+            width: 400px;
         }
 
-        .win-message h2 {
-            font-size: 2em;
+        .modal-content h2 {
+            font-size: clamp(1.5em, 5vw, 2em);
             margin-bottom: 15px;
+        }
+
+        .modal-content p {
+            margin: 10px 0;
+            font-size: clamp(1em, 3vw, 1.2em);
+        }
+
+        .modal-content button {
+            margin-top: 20px;
+            background: white;
+            color: #4CAF50;
+        }
+
+        .game-over-modal .modal-content {
+            background: linear-gradient(145deg, #E53935, #C62828);
+        }
+
+        .final-modal .modal-content {
+            background: linear-gradient(145deg, #9C27B0, #7B1FA2);
+        }
+
+        .location-banner {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            z-index: 10;
+        }
+
+        @media (max-width: 500px) {
+            body {
+                padding: 5px;
+            }
+
+            .game-info span {
+                padding: 6px 10px;
+            }
+
+            .level-dot {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+            }
+
+            button {
+                padding: 10px 18px;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>🐷 BIGCOIN 🚛</h1>
-    <p class="subtitle">Laad alle biggen zo snel mogelijk in de vrachtwagen!</p>
+    <h1>🐷 BIGCOIN 🍖</h1>
+    <p class="level-title" id="levelTitle">Level 1: Varkens Laden - Zijtaart</p>
 
-    <div class="game-info">
-        <span>⏱️ Tijd: <strong id="timer">0.00</strong>s</span>
-        <span>🐷 Biggen: <strong id="pigCount">0</strong> / <strong id="totalPigs">10</strong></span>
+    <div class="level-indicator">
+        <div class="level-dot current" id="dot1">1</div>
+        <div class="level-dot locked" id="dot2">2</div>
+        <div class="level-dot locked" id="dot3">3</div>
+        <div class="level-dot locked" id="dot4">4</div>
     </div>
 
-    <canvas id="gameCanvas" width="800" height="500"></canvas>
+    <div class="game-info">
+        <span>⏱️ <strong id="timer">0.0</strong>s</span>
+        <span id="scoreDisplay">🐷 <strong id="progress">0</strong>/<strong id="target">8</strong></span>
+        <span>💰 <strong id="totalScore">0</strong> pts</span>
+    </div>
+
+    <canvas id="gameCanvas" width="400" height="500"></canvas>
 
     <div class="buttons">
-        <button id="startBtn">🎮 Start Spel</button>
+        <button id="startBtn">🎮 Start</button>
         <button id="resetBtn">🔄 Opnieuw</button>
     </div>
 
-    <div class="highscore" id="highscore">🏆 Beste tijd: --</div>
-
-    <div class="instructions">
-        <strong>Hoe te spelen:</strong> Sleep de biggen 🐷 naar de vrachtwagen 🚛 aan de rechterkant.
-        Probeer zo snel mogelijk alle biggen te laden!
+    <div class="instructions" id="instructions">
+        <strong>Level 1 - Zijtaart:</strong> Sleep de biggen naar de vrachtwagen!
     </div>
 
-    <div class="win-message" id="winMessage">
-        <h2>🎉 Gefeliciteerd! 🎉</h2>
-        <p>Alle biggen zijn geladen!</p>
-        <p>Jouw tijd: <strong id="finalTime">0.00</strong> seconden</p>
-        <p id="newRecord" style="color: #FFD700; display: none;">🏆 NIEUW RECORD! 🏆</p>
+    <div class="highscore" id="highscore">🏆 Beste totaalscore: --</div>
+
+    <!-- Level Complete Modal -->
+    <div class="modal" id="levelModal">
+        <div class="modal-content">
+            <h2 id="modalTitle">🎉 Level Compleet!</h2>
+            <p id="modalText">Je hebt alle biggen geladen!</p>
+            <p>Tijd: <strong id="modalTime">0.0</strong>s</p>
+            <p>Score: <strong id="modalScore">0</strong> punten</p>
+            <button id="nextLevelBtn">Volgende Level ➡️</button>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal game-over-modal" id="gameOverModal">
+        <div class="modal-content">
+            <h2>💀 Game Over!</h2>
+            <p id="gameOverText">Je bent gecrasht!</p>
+            <p>Totale score: <strong id="gameOverScore">0</strong></p>
+            <button id="retryBtn">🔄 Probeer Opnieuw</button>
+        </div>
+    </div>
+
+    <!-- Final Win Modal -->
+    <div class="modal final-modal" id="finalModal">
+        <div class="modal-content">
+            <h2>🏆 GEWONNEN! 🏆</h2>
+            <p>Je hebt alle levels voltooid!</p>
+            <p>Van varken tot BBQ in <strong id="finalTotalTime">0</strong>s</p>
+            <p>Totale score: <strong id="finalScore">0</strong> punten</p>
+            <p id="newRecordText" style="color: #FFD700; display: none;">⭐ NIEUW RECORD! ⭐</p>
+            <button id="playAgainBtn">🎮 Speel Opnieuw</button>
+        </div>
     </div>
 
     <script>
+        // ==================== GAME SETUP ====================
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Game state
-        let pigs = [];
-        let truck = { x: 620, y: 200, width: 160, height: 200 };
-        let truckBed = { x: 640, y: 250, width: 100, height: 140 };
-        let draggingPig = null;
-        let offsetX, offsetY;
+        // Responsive canvas sizing
+        function resizeCanvas() {
+            const maxWidth = Math.min(window.innerWidth - 20, 500);
+            const ratio = 500 / 400;
+            canvas.style.width = maxWidth + 'px';
+            canvas.style.height = (maxWidth * ratio) + 'px';
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // ==================== GAME STATE ====================
+        let currentLevel = 1;
         let gameStarted = false;
-        let gameWon = false;
+        let gamePaused = false;
         let startTime = 0;
         let currentTime = 0;
+        let totalScore = 0;
+        let totalTime = 0;
+        let highScore = localStorage.getItem('bigcoinHighScore2') || null;
+
+        // Level-specific state
+        let pigs = [];
         let loadedPigs = 0;
-        let highScore = localStorage.getItem('bigcoinHighScore') || null;
-        let totalPigCount = 10;
+        let draggingPig = null;
+        let offsetX, offsetY;
+
+        // Level 2 state
+        let truckX = 200;
+        let truckLane = 1;
+        let obstacles = [];
+        let roadOffset = 0;
+        let lives = 3;
+        let distance = 0;
+        let targetDistance = 100;
+
+        // Level 3 state
+        let pigsToProcess = [];
+        let processedPigs = 0;
+        let targetProcessed = 10;
+
+        // Level 4 state
+        let grillItems = [];
+        let cookedItems = 0;
+        let burnedItems = 0;
+        let targetCooked = 8;
 
         // Update highscore display
         if (highScore) {
-            document.getElementById('highscore').textContent = `🏆 Beste tijd: ${parseFloat(highScore).toFixed(2)}s`;
+            document.getElementById('highscore').textContent = `🏆 Beste totaalscore: ${highScore} pts`;
         }
 
-        // Pig class
+        // ==================== LEVEL DATA ====================
+        const levels = {
+            1: {
+                name: "Varkens Laden - Zijtaart",
+                instruction: "Sleep de biggen naar de vrachtwagen!",
+                target: 8,
+                scoreLabel: "🐷"
+            },
+            2: {
+                name: "A50 Snelweg",
+                instruction: "Tik links/rechts om van baan te wisselen. Ontwijken!",
+                target: 100,
+                scoreLabel: "🛣️"
+            },
+            3: {
+                name: "Slachterij - Boxtel",
+                instruction: "Tik op de varkens om ze te verwerken!",
+                target: 10,
+                scoreLabel: "🔪"
+            },
+            4: {
+                name: "BBQ Feest - Veghel",
+                instruction: "Tik op vlees om het om te draaien. Niet laten verbranden!",
+                target: 8,
+                scoreLabel: "🍖"
+            }
+        };
+
+        // ==================== UTILITY FUNCTIONS ====================
+        function getCanvasCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            if (e.touches) {
+                return {
+                    x: (e.touches[0].clientX - rect.left) * scaleX,
+                    y: (e.touches[0].clientY - rect.top) * scaleY
+                };
+            }
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+
+        function updateUI() {
+            document.getElementById('levelTitle').textContent = `Level ${currentLevel}: ${levels[currentLevel].name}`;
+            document.getElementById('instructions').innerHTML = `<strong>Level ${currentLevel}:</strong> ${levels[currentLevel].instruction}`;
+
+            // Update level dots
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById(`dot${i}`);
+                dot.className = 'level-dot';
+                if (i < currentLevel) dot.classList.add('completed');
+                else if (i === currentLevel) dot.classList.add('current');
+                else dot.classList.add('locked');
+            }
+        }
+
+        // ==================== LEVEL 1: LOADING PIGS ====================
         class Pig {
-            constructor(x, y) {
+            constructor(x, y, size = 1) {
                 this.x = x;
                 this.y = y;
-                this.width = 60;
-                this.height = 50;
+                this.baseWidth = 50 * size;
+                this.baseHeight = 40 * size;
+                this.width = this.baseWidth;
+                this.height = this.baseHeight;
                 this.loaded = false;
                 this.wobble = Math.random() * Math.PI * 2;
-                this.wobbleSpeed = 0.05 + Math.random() * 0.03;
             }
 
-            draw() {
+            draw(ctx) {
                 if (this.loaded) return;
 
-                ctx.save();
-                this.wobble += this.wobbleSpeed;
-                const wobbleOffset = Math.sin(this.wobble) * 2;
+                this.wobble += 0.05;
+                const wobble = Math.sin(this.wobble) * 2;
+                const cx = this.x + this.width/2;
+                const cy = this.y + this.height/2 + wobble;
 
-                // Body (pink oval)
+                // Body
                 ctx.fillStyle = '#FFB6C1';
                 ctx.beginPath();
-                ctx.ellipse(this.x + this.width/2, this.y + this.height/2 + wobbleOffset,
-                           this.width/2, this.height/2.5, 0, 0, Math.PI * 2);
+                ctx.ellipse(cx, cy, this.width/2, this.height/2.5, 0, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.strokeStyle = '#FF69B4';
                 ctx.lineWidth = 2;
                 ctx.stroke();
 
                 // Head
-                ctx.fillStyle = '#FFB6C1';
                 ctx.beginPath();
-                ctx.ellipse(this.x + this.width - 5, this.y + this.height/2 + wobbleOffset,
-                           18, 15, 0, 0, Math.PI * 2);
+                ctx.ellipse(cx + this.width/3, cy, 15, 12, 0, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.stroke();
 
                 // Snout
                 ctx.fillStyle = '#FFA0B4';
                 ctx.beginPath();
-                ctx.ellipse(this.x + this.width + 8, this.y + this.height/2 + wobbleOffset,
-                           10, 8, 0, 0, Math.PI * 2);
+                ctx.ellipse(cx + this.width/2 + 5, cy, 8, 6, 0, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.strokeStyle = '#FF69B4';
                 ctx.stroke();
 
                 // Nostrils
                 ctx.fillStyle = '#FF69B4';
                 ctx.beginPath();
-                ctx.ellipse(this.x + this.width + 5, this.y + this.height/2 - 2 + wobbleOffset, 2, 2, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.ellipse(this.x + this.width + 11, this.y + this.height/2 - 2 + wobbleOffset, 2, 2, 0, 0, Math.PI * 2);
+                ctx.arc(cx + this.width/2 + 2, cy - 1, 2, 0, Math.PI * 2);
+                ctx.arc(cx + this.width/2 + 8, cy - 1, 2, 0, Math.PI * 2);
                 ctx.fill();
 
                 // Eyes
                 ctx.fillStyle = '#000';
                 ctx.beginPath();
-                ctx.arc(this.x + this.width - 2, this.y + this.height/2 - 8 + wobbleOffset, 4, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Eye shine
-                ctx.fillStyle = '#FFF';
-                ctx.beginPath();
-                ctx.arc(this.x + this.width - 1, this.y + this.height/2 - 9 + wobbleOffset, 1.5, 0, Math.PI * 2);
+                ctx.arc(cx + this.width/3 + 3, cy - 5, 3, 0, Math.PI * 2);
                 ctx.fill();
 
                 // Ears
                 ctx.fillStyle = '#FFB6C1';
                 ctx.beginPath();
-                ctx.ellipse(this.x + this.width - 15, this.y + this.height/2 - 18 + wobbleOffset,
-                           8, 10, -0.3, 0, Math.PI * 2);
+                ctx.ellipse(cx + this.width/4, cy - 15, 6, 8, -0.3, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.strokeStyle = '#FF69B4';
-                ctx.stroke();
-
-                // Tail (curly)
-                ctx.strokeStyle = '#FF69B4';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.moveTo(this.x + 5, this.y + this.height/2 + wobbleOffset);
-                for (let i = 0; i < 3; i++) {
-                    ctx.quadraticCurveTo(
-                        this.x - 5 - i*5, this.y + this.height/2 - 8 + wobbleOffset,
-                        this.x - 5 - i*5, this.y + this.height/2 + wobbleOffset
-                    );
-                    ctx.quadraticCurveTo(
-                        this.x - 5 - i*5, this.y + this.height/2 + 8 + wobbleOffset,
-                        this.x - 10 - i*5, this.y + this.height/2 + wobbleOffset
-                    );
-                }
                 ctx.stroke();
 
                 // Legs
+                ctx.fillRect(cx - 15, cy + this.height/3, 6, 12);
+                ctx.fillRect(cx + 5, cy + this.height/3, 6, 12);
+            }
+
+            contains(px, py) {
+                return px >= this.x - 10 && px <= this.x + this.width + 20 &&
+                       py >= this.y - 10 && py <= this.y + this.height + 20;
+            }
+        }
+
+        const truck = { x: 280, y: 50, width: 110, height: 150 };
+        const truckBed = { x: 290, y: 80, width: 90, height: 110 };
+
+        function initLevel1() {
+            pigs = [];
+            loadedPigs = 0;
+            document.getElementById('progress').textContent = '0';
+            document.getElementById('target').textContent = levels[1].target;
+            document.getElementById('scoreDisplay').innerHTML = `🐷 <strong id="progress">0</strong>/<strong id="target">${levels[1].target}</strong>`;
+
+            for (let i = 0; i < levels[1].target; i++) {
+                let x, y, valid = false;
+                while (!valid) {
+                    x = 20 + Math.random() * 230;
+                    y = 220 + Math.random() * 220;
+                    valid = true;
+                    for (const p of pigs) {
+                        if (Math.hypot(x - p.x, y - p.y) < 60) {
+                            valid = false;
+                            break;
+                        }
+                    }
+                }
+                pigs.push(new Pig(x, y));
+            }
+        }
+
+        function drawLevel1() {
+            // Sky
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, 200);
+
+            // Sun
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(50, 50, 30, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Grass
+            ctx.fillStyle = '#7CFC00';
+            ctx.fillRect(0, 200, canvas.width, 300);
+
+            // Barn
+            ctx.fillStyle = '#B22222';
+            ctx.fillRect(10, 120, 80, 80);
+            ctx.fillStyle = '#8B0000';
+            ctx.beginPath();
+            ctx.moveTo(5, 120);
+            ctx.lineTo(50, 80);
+            ctx.lineTo(95, 120);
+            ctx.fill();
+
+            // Fence
+            ctx.fillStyle = '#8B4513';
+            for (let i = 0; i < 6; i++) {
+                ctx.fillRect(10 + i * 45, 190, 5, 30);
+            }
+            ctx.fillRect(10, 195, 250, 4);
+            ctx.fillRect(10, 210, 250, 4);
+
+            // Location sign
+            ctx.fillStyle = '#FFF';
+            ctx.fillRect(150, 100, 80, 25);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(150, 100, 80, 25);
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('ZIJTAART', 190, 117);
+
+            // Truck
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(truck.x, truck.y + 30, truck.width, truck.height - 30);
+            ctx.fillStyle = '#DEB887';
+            ctx.fillRect(truckBed.x, truckBed.y, truckBed.width, truckBed.height);
+            ctx.strokeStyle = '#5D3A1A';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(truck.x, truck.y + 30, truck.width, truck.height - 30);
+
+            // Truck cabin
+            ctx.fillStyle = '#E53935';
+            ctx.fillRect(truck.x + truck.width - 40, truck.y + truck.height - 50, 40, 50);
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(truck.x + truck.width - 35, truck.y + truck.height - 45, 30, 20);
+
+            // Wheels
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(truck.x + 25, truck.y + truck.height + 5, 18, 0, Math.PI * 2);
+            ctx.arc(truck.x + truck.width - 20, truck.y + truck.height + 5, 18, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Loaded count
+            ctx.fillStyle = '#8B4513';
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`🐷 ${loadedPigs}`, truckBed.x + truckBed.width/2, truckBed.y + 60);
+
+            // Draw pigs
+            for (const pig of pigs) {
+                pig.draw(ctx);
+            }
+        }
+
+        // ==================== LEVEL 2: A50 HIGHWAY ====================
+        function initLevel2() {
+            truckLane = 1;
+            obstacles = [];
+            roadOffset = 0;
+            lives = 3;
+            distance = 0;
+            document.getElementById('progress').textContent = '0';
+            document.getElementById('target').textContent = targetDistance;
+            document.getElementById('scoreDisplay').innerHTML = `🛣️ <strong id="progress">0</strong>/<strong id="target">${targetDistance}</strong>km ❤️x${lives}`;
+        }
+
+        function drawLevel2() {
+            // Sky
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, 100);
+
+            // Road
+            ctx.fillStyle = '#444';
+            ctx.fillRect(50, 100, 300, 400);
+
+            // Road markings (animated)
+            ctx.strokeStyle = '#FFF';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([30, 30]);
+
+            for (let lane = 0; lane < 2; lane++) {
+                ctx.beginPath();
+                ctx.moveTo(150 + lane * 100, -60 + (roadOffset % 60));
+                for (let y = -60 + (roadOffset % 60); y < 500; y += 60) {
+                    ctx.moveTo(150 + lane * 100, y);
+                    ctx.lineTo(150 + lane * 100, y + 30);
+                }
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+
+            // Lane dividers
+            ctx.fillStyle = '#FFF';
+            ctx.fillRect(50, 100, 5, 400);
+            ctx.fillRect(345, 100, 5, 400);
+
+            // A50 sign
+            ctx.fillStyle = '#003366';
+            ctx.fillRect(320, 20, 70, 40);
+            ctx.fillStyle = '#FFF';
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('A50', 355, 48);
+
+            // Draw obstacles
+            for (const obs of obstacles) {
+                if (obs.type === 'car') {
+                    ctx.fillStyle = obs.color;
+                    ctx.fillRect(obs.x, obs.y, 40, 70);
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(obs.x + 5, obs.y + 5, 30, 15);
+                    ctx.fillRect(obs.x + 5, obs.y + 50, 30, 15);
+                } else if (obs.type === 'cone') {
+                    ctx.fillStyle = '#FF6600';
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x + 15, obs.y);
+                    ctx.lineTo(obs.x + 30, obs.y + 40);
+                    ctx.lineTo(obs.x, obs.y + 40);
+                    ctx.fill();
+                    ctx.fillStyle = '#FFF';
+                    ctx.fillRect(obs.x + 5, obs.y + 15, 20, 8);
+                }
+            }
+
+            // Draw player truck (top view)
+            const playerX = 80 + truckLane * 90;
+            ctx.fillStyle = '#E53935';
+            ctx.fillRect(playerX, 380, 50, 80);
+            ctx.fillStyle = '#FFB6C1';
+            ctx.fillRect(playerX + 10, 400, 30, 30);
+            ctx.fillStyle = '#333';
+            ctx.fillRect(playerX - 3, 390, 8, 20);
+            ctx.fillRect(playerX + 45, 390, 8, 20);
+            ctx.fillRect(playerX - 3, 440, 8, 20);
+            ctx.fillRect(playerX + 45, 440, 8, 20);
+
+            // HUD
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(10, 110, 35, 80);
+            ctx.fillStyle = '#FFF';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('KM', 27, 125);
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText(Math.floor(distance), 27, 145);
+            ctx.fillStyle = '#F00';
+            ctx.font = '20px Arial';
+            ctx.fillText('❤️'.repeat(lives), 27, 175);
+        }
+
+        function updateLevel2() {
+            if (!gameStarted || gamePaused) return;
+
+            roadOffset += 8;
+            distance += 0.5;
+
+            // Spawn obstacles
+            if (Math.random() < 0.03) {
+                const lane = Math.floor(Math.random() * 3);
+                const type = Math.random() < 0.7 ? 'car' : 'cone';
+                const colors = ['#2196F3', '#9C27B0', '#FF9800', '#4CAF50', '#795548'];
+                obstacles.push({
+                    x: 80 + lane * 90 + 5,
+                    y: -80,
+                    type: type,
+                    color: colors[Math.floor(Math.random() * colors.length)]
+                });
+            }
+
+            // Move obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].y += 8;
+                if (obstacles[i].y > 550) {
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            // Collision detection
+            const playerX = 80 + truckLane * 90;
+            for (const obs of obstacles) {
+                if (obs.y + 70 > 380 && obs.y < 460) {
+                    if (playerX + 50 > obs.x && playerX < obs.x + 40) {
+                        lives--;
+                        obstacles.splice(obstacles.indexOf(obs), 1);
+                        document.getElementById('scoreDisplay').innerHTML =
+                            `🛣️ <strong id="progress">${Math.floor(distance)}</strong>/<strong id="target">${targetDistance}</strong>km ❤️x${lives}`;
+
+                        if (lives <= 0) {
+                            gameOver("Je bent gecrasht op de A50!");
+                            return;
+                        }
+                    }
+                }
+            }
+
+            document.getElementById('progress').textContent = Math.floor(distance);
+
+            if (distance >= targetDistance) {
+                levelComplete();
+            }
+        }
+
+        // ==================== LEVEL 3: SLAUGHTERHOUSE ====================
+        class ProcessPig {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.scale = 0.8;
+                this.processed = false;
+                this.clickable = true;
+                this.flash = 0;
+            }
+
+            draw(ctx) {
+                if (this.processed) return;
+
+                const size = 35 * this.scale;
+                ctx.save();
+
+                if (this.flash > 0) {
+                    ctx.globalAlpha = 0.5 + Math.sin(this.flash * 10) * 0.5;
+                    this.flash -= 0.1;
+                }
+
+                // Simple pig
                 ctx.fillStyle = '#FFB6C1';
+                ctx.beginPath();
+                ctx.ellipse(this.x, this.y, size, size * 0.7, 0, 0, Math.PI * 2);
+                ctx.fill();
                 ctx.strokeStyle = '#FF69B4';
                 ctx.lineWidth = 2;
+                ctx.stroke();
 
-                // Front legs
-                ctx.fillRect(this.x + this.width - 25, this.y + this.height - 5 + wobbleOffset, 8, 15);
-                ctx.strokeRect(this.x + this.width - 25, this.y + this.height - 5 + wobbleOffset, 8, 15);
-                ctx.fillRect(this.x + this.width - 40, this.y + this.height - 5 + wobbleOffset, 8, 15);
-                ctx.strokeRect(this.x + this.width - 40, this.y + this.height - 5 + wobbleOffset, 8, 15);
+                // Head
+                ctx.beginPath();
+                ctx.arc(this.x + size * 0.6, this.y, size * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
 
-                // Hooves
-                ctx.fillStyle = '#8B4513';
-                ctx.fillRect(this.x + this.width - 26, this.y + this.height + 7 + wobbleOffset, 10, 5);
-                ctx.fillRect(this.x + this.width - 41, this.y + this.height + 7 + wobbleOffset, 10, 5);
+                // Snout
+                ctx.fillStyle = '#FFA0B4';
+                ctx.beginPath();
+                ctx.ellipse(this.x + size * 0.9, this.y, 8, 6, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Eye
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(this.x + size * 0.5, this.y - 5, 3, 0, Math.PI * 2);
+                ctx.fill();
 
                 ctx.restore();
             }
 
             contains(px, py) {
-                return px >= this.x && px <= this.x + this.width + 20 &&
-                       py >= this.y && py <= this.y + this.height + 15;
+                const dist = Math.hypot(px - this.x, py - this.y);
+                return dist < 40 && this.clickable;
             }
         }
 
-        function drawTruck() {
-            // Truck bed (back)
-            ctx.fillStyle = '#8B4513';
-            ctx.fillRect(truck.x, truck.y + 50, truck.width, truck.height - 50);
+        function initLevel3() {
+            pigsToProcess = [];
+            processedPigs = 0;
+            document.getElementById('progress').textContent = '0';
+            document.getElementById('target').textContent = targetProcessed;
+            document.getElementById('scoreDisplay').innerHTML = `🔪 <strong id="progress">0</strong>/<strong id="target">${targetProcessed}</strong>`;
 
-            // Truck bed inner (where pigs go)
-            ctx.fillStyle = '#DEB887';
-            ctx.fillRect(truckBed.x, truckBed.y, truckBed.width, truckBed.height);
+            spawnProcessPig();
+        }
 
-            // Truck bed borders
-            ctx.strokeStyle = '#5D3A1A';
-            ctx.lineWidth = 4;
-            ctx.strokeRect(truck.x, truck.y + 50, truck.width, truck.height - 50);
+        function spawnProcessPig() {
+            if (pigsToProcess.length < 5 && processedPigs < targetProcessed) {
+                const x = 50 + Math.random() * 300;
+                const y = 150 + Math.random() * 300;
+                pigsToProcess.push(new ProcessPig(x, y));
+            }
+        }
 
-            // Wooden slats
-            ctx.strokeStyle = '#8B4513';
-            ctx.lineWidth = 3;
-            for (let i = 0; i < 4; i++) {
+        function drawLevel3() {
+            // Factory floor
+            ctx.fillStyle = '#DDD';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Tiles
+            ctx.strokeStyle = '#BBB';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 40) {
                 ctx.beginPath();
-                ctx.moveTo(truck.x, truck.y + 80 + i * 40);
-                ctx.lineTo(truck.x + truck.width, truck.y + 80 + i * 40);
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
                 ctx.stroke();
             }
 
-            // Truck cabin
-            ctx.fillStyle = '#E53935';
-            ctx.fillRect(truck.x + truck.width - 60, truck.y + truck.height - 80, 60, 80);
-
-            // Cabin window
-            ctx.fillStyle = '#87CEEB';
-            ctx.fillRect(truck.x + truck.width - 50, truck.y + truck.height - 70, 40, 30);
-
-            // Window reflection
-            ctx.fillStyle = 'rgba(255,255,255,0.3)';
-            ctx.beginPath();
-            ctx.moveTo(truck.x + truck.width - 50, truck.y + truck.height - 70);
-            ctx.lineTo(truck.x + truck.width - 30, truck.y + truck.height - 70);
-            ctx.lineTo(truck.x + truck.width - 50, truck.y + truck.height - 50);
-            ctx.fill();
-
-            // Wheels
-            ctx.fillStyle = '#333';
-            ctx.beginPath();
-            ctx.arc(truck.x + 40, truck.y + truck.height + 10, 25, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(truck.x + truck.width - 30, truck.y + truck.height + 10, 25, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Wheel caps
-            ctx.fillStyle = '#666';
-            ctx.beginPath();
-            ctx.arc(truck.x + 40, truck.y + truck.height + 10, 12, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(truck.x + truck.width - 30, truck.y + truck.height + 10, 12, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Draw loaded pig count in truck
-            ctx.fillStyle = '#8B4513';
-            ctx.font = 'bold 24px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(`🐷 ${loadedPigs}`, truckBed.x + truckBed.width/2, truckBed.y + truckBed.height/2 + 10);
-        }
-
-        function drawGround() {
-            // Grass
-            ctx.fillStyle = '#7CFC00';
-            ctx.fillRect(0, 420, canvas.width, 80);
-
-            // Road
-            ctx.fillStyle = '#555';
-            ctx.fillRect(550, 420, 250, 80);
-
-            // Road lines
-            ctx.strokeStyle = '#FFF';
-            ctx.lineWidth = 3;
-            ctx.setLineDash([20, 20]);
-            ctx.beginPath();
-            ctx.moveTo(550, 460);
-            ctx.lineTo(800, 460);
-            ctx.stroke();
-            ctx.setLineDash([]);
-
-            // Fence
-            ctx.strokeStyle = '#8B4513';
-            ctx.lineWidth = 4;
-            for (let i = 0; i < 12; i++) {
-                // Fence posts
-                ctx.fillStyle = '#A0522D';
-                ctx.fillRect(30 + i * 45, 380, 8, 50);
-            }
-            // Fence rails
-            ctx.beginPath();
-            ctx.moveTo(20, 390);
-            ctx.lineTo(520, 390);
-            ctx.moveTo(20, 410);
-            ctx.lineTo(520, 410);
-            ctx.stroke();
-        }
-
-        function drawSky() {
-            // Sun
-            ctx.fillStyle = '#FFD700';
-            ctx.beginPath();
-            ctx.arc(100, 80, 40, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Sun rays
-            ctx.strokeStyle = '#FFD700';
-            ctx.lineWidth = 3;
-            for (let i = 0; i < 8; i++) {
-                const angle = (i / 8) * Math.PI * 2;
-                ctx.beginPath();
-                ctx.moveTo(100 + Math.cos(angle) * 50, 80 + Math.sin(angle) * 50);
-                ctx.lineTo(100 + Math.cos(angle) * 65, 80 + Math.sin(angle) * 65);
-                ctx.stroke();
-            }
-
-            // Clouds
-            drawCloud(200, 60);
-            drawCloud(400, 90);
-            drawCloud(600, 50);
-        }
-
-        function drawCloud(x, y) {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-            ctx.beginPath();
-            ctx.arc(x, y, 25, 0, Math.PI * 2);
-            ctx.arc(x + 25, y - 10, 20, 0, Math.PI * 2);
-            ctx.arc(x + 50, y, 25, 0, Math.PI * 2);
-            ctx.arc(x + 25, y + 5, 20, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        function drawBarn() {
-            // Barn body
-            ctx.fillStyle = '#B22222';
-            ctx.fillRect(20, 280, 120, 140);
-
-            // Barn roof
+            // Sign
             ctx.fillStyle = '#8B0000';
-            ctx.beginPath();
-            ctx.moveTo(10, 280);
-            ctx.lineTo(80, 220);
-            ctx.lineTo(150, 280);
-            ctx.fill();
+            ctx.fillRect(100, 20, 200, 50);
+            ctx.fillStyle = '#FFF';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('SLACHTERIJ BOXTEL', 200, 52);
 
-            // Barn door
-            ctx.fillStyle = '#5D3A1A';
-            ctx.fillRect(55, 340, 50, 80);
+            // Conveyor belt
+            ctx.fillStyle = '#555';
+            ctx.fillRect(0, 100, canvas.width, 30);
+            ctx.fillStyle = '#333';
+            for (let x = (Date.now() / 50) % 20; x < canvas.width; x += 20) {
+                ctx.fillRect(x, 100, 10, 30);
+            }
 
-            // Door cross
-            ctx.strokeStyle = '#3D2A1A';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.moveTo(55, 340);
-            ctx.lineTo(105, 420);
-            ctx.moveTo(105, 340);
-            ctx.lineTo(55, 420);
-            ctx.stroke();
+            // Progress bar
+            ctx.fillStyle = '#333';
+            ctx.fillRect(50, 470, 300, 20);
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillRect(50, 470, (processedPigs / targetProcessed) * 300, 20);
+            ctx.strokeStyle = '#000';
+            ctx.strokeRect(50, 470, 300, 20);
 
-            // Barn window
-            ctx.fillStyle = '#FFD700';
-            ctx.beginPath();
-            ctx.arc(80, 260, 15, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#5D3A1A';
-            ctx.lineWidth = 3;
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(80, 245);
-            ctx.lineTo(80, 275);
-            ctx.moveTo(65, 260);
-            ctx.lineTo(95, 260);
-            ctx.stroke();
+            // Draw pigs
+            for (const pig of pigsToProcess) {
+                pig.draw(ctx);
+            }
         }
 
-        function initGame() {
-            pigs = [];
-            loadedPigs = 0;
-            gameWon = false;
-            document.getElementById('winMessage').style.display = 'none';
-            document.getElementById('pigCount').textContent = '0';
+        // ==================== LEVEL 4: BBQ ====================
+        class GrillItem {
+            constructor(x, y, slot) {
+                this.x = x;
+                this.y = y;
+                this.slot = slot;
+                this.cookProgress = 0;
+                this.flipped = false;
+                this.done = false;
+                this.burned = false;
+            }
 
-            // Create pigs at random positions in the field
-            for (let i = 0; i < totalPigCount; i++) {
-                let x, y;
-                let validPosition = false;
+            draw(ctx) {
+                if (this.done) return;
 
-                while (!validPosition) {
-                    x = 150 + Math.random() * 350;
-                    y = 180 + Math.random() * 180;
-                    validPosition = true;
+                // Meat shape
+                const rawColor = [255, 150, 150];
+                const cookedColor = [139, 69, 19];
+                const burnedColor = [30, 30, 30];
 
-                    // Check overlap with other pigs
-                    for (const pig of pigs) {
-                        const dx = x - pig.x;
-                        const dy = y - pig.y;
-                        if (Math.sqrt(dx*dx + dy*dy) < 70) {
-                            validPosition = false;
-                            break;
-                        }
+                let color;
+                if (this.burned) {
+                    color = burnedColor;
+                } else if (this.cookProgress < 50) {
+                    const t = this.cookProgress / 50;
+                    color = rawColor.map((c, i) => Math.round(c + (cookedColor[i] - c) * t));
+                } else {
+                    const t = Math.min((this.cookProgress - 50) / 50, 1);
+                    color = cookedColor.map((c, i) => Math.round(c + (burnedColor[i] - c) * t));
+                }
+
+                ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+
+                // Pork chop shape
+                ctx.beginPath();
+                ctx.ellipse(this.x, this.y, 35, 25, 0.2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#5D3A1A';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Bone
+                ctx.fillStyle = '#F5F5DC';
+                ctx.beginPath();
+                ctx.ellipse(this.x - 30, this.y + 5, 12, 6, 0.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Grill marks
+                if (this.flipped && this.cookProgress > 20) {
+                    ctx.strokeStyle = '#2D1B0E';
+                    ctx.lineWidth = 3;
+                    for (let i = -1; i <= 1; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(this.x - 20, this.y + i * 12);
+                        ctx.lineTo(this.x + 20, this.y + i * 12);
+                        ctx.stroke();
                     }
                 }
 
-                pigs.push(new Pig(x, y));
+                // Status indicator
+                if (!this.burned && !this.done) {
+                    const perfectMin = 40;
+                    const perfectMax = 70;
+
+                    if (this.cookProgress >= perfectMin && this.cookProgress <= perfectMax) {
+                        ctx.fillStyle = '#4CAF50';
+                        ctx.font = 'bold 14px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('✓ FLIP!', this.x, this.y - 30);
+                    } else if (this.cookProgress > perfectMax && this.cookProgress < 90) {
+                        ctx.fillStyle = '#FF9800';
+                        ctx.font = 'bold 12px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('⚠️', this.x, this.y - 30);
+                    } else if (this.cookProgress >= 90) {
+                        ctx.fillStyle = '#F44336';
+                        ctx.font = 'bold 14px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('🔥', this.x, this.y - 30);
+                    }
+                }
             }
 
+            contains(px, py) {
+                return Math.hypot(px - this.x, py - this.y) < 40;
+            }
+
+            update() {
+                if (this.done || this.burned) return;
+
+                this.cookProgress += 0.4;
+
+                if (this.cookProgress >= 100) {
+                    this.burned = true;
+                    burnedItems++;
+                    if (burnedItems >= 3) {
+                        gameOver("Te veel vlees verbrand!");
+                    }
+                }
+            }
+
+            flip() {
+                if (this.done || this.burned) return false;
+
+                const perfectMin = 40;
+                const perfectMax = 70;
+
+                if (this.flipped) {
+                    // Second flip = done
+                    if (this.cookProgress >= perfectMin && this.cookProgress <= perfectMax) {
+                        this.done = true;
+                        cookedItems++;
+                        document.getElementById('progress').textContent = cookedItems;
+
+                        if (cookedItems >= targetCooked) {
+                            levelComplete();
+                        }
+                        return true;
+                    }
+                } else {
+                    // First flip
+                    if (this.cookProgress >= perfectMin * 0.5) {
+                        this.flipped = true;
+                        this.cookProgress = 0;
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+
+        function initLevel4() {
+            grillItems = [];
+            cookedItems = 0;
+            burnedItems = 0;
+            document.getElementById('progress').textContent = '0';
+            document.getElementById('target').textContent = targetCooked;
+            document.getElementById('scoreDisplay').innerHTML = `🍖 <strong id="progress">0</strong>/<strong id="target">${targetCooked}</strong> 🔥x${burnedItems}/3`;
+
+            // Create grill slots
+            const slots = [
+                {x: 80, y: 180}, {x: 200, y: 180}, {x: 320, y: 180},
+                {x: 80, y: 280}, {x: 200, y: 280}, {x: 320, y: 280},
+                {x: 80, y: 380}, {x: 200, y: 380}, {x: 320, y: 380}
+            ];
+
+            for (let i = 0; i < 6; i++) {
+                grillItems.push(new GrillItem(slots[i].x, slots[i].y, i));
+            }
+        }
+
+        function drawLevel4() {
+            // Background - party scene
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, 100);
+
+            // Grass
+            ctx.fillStyle = '#7CFC00';
+            ctx.fillRect(0, 100, canvas.width, 400);
+
+            // BBQ grill
+            ctx.fillStyle = '#333';
+            ctx.fillRect(30, 130, 340, 300);
+            ctx.fillStyle = '#222';
+            ctx.fillRect(40, 140, 320, 280);
+
+            // Grill grates
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 4;
+            for (let y = 160; y < 420; y += 20) {
+                ctx.beginPath();
+                ctx.moveTo(45, y);
+                ctx.lineTo(355, y);
+                ctx.stroke();
+            }
+
+            // Glow effect
+            ctx.fillStyle = 'rgba(255, 100, 0, 0.3)';
+            ctx.fillRect(40, 140, 320, 280);
+
+            // Banner
+            ctx.fillStyle = '#FF6600';
+            ctx.fillRect(80, 30, 240, 50);
+            ctx.fillStyle = '#FFF';
+            ctx.font = 'bold 18px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('🍖 BBQ VEGHEL 🍖', 200, 62);
+
+            // Burn counter
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText(`Verbrand: ${burnedItems}/3`, 200, 475);
+
+            // Draw grill items
+            for (const item of grillItems) {
+                item.draw(ctx);
+            }
+        }
+
+        function updateLevel4() {
+            if (!gameStarted || gamePaused) return;
+
+            for (const item of grillItems) {
+                item.update();
+            }
+
+            document.getElementById('scoreDisplay').innerHTML =
+                `🍖 <strong id="progress">${cookedItems}</strong>/<strong id="target">${targetCooked}</strong> 🔥x${burnedItems}/3`;
+
+            // Add new meat if needed
+            const activeItems = grillItems.filter(i => !i.done && !i.burned).length;
+            if (activeItems < 4 && cookedItems + activeItems < targetCooked) {
+                const slots = [
+                    {x: 80, y: 180}, {x: 200, y: 180}, {x: 320, y: 180},
+                    {x: 80, y: 280}, {x: 200, y: 280}, {x: 320, y: 280}
+                ];
+                const usedSlots = grillItems.filter(i => !i.done && !i.burned).map(i => i.slot);
+                const freeSlots = [0,1,2,3,4,5].filter(s => !usedSlots.includes(s));
+
+                if (freeSlots.length > 0) {
+                    const slot = freeSlots[Math.floor(Math.random() * freeSlots.length)];
+                    grillItems.push(new GrillItem(slots[slot].x, slots[slot].y, slot));
+                }
+            }
+        }
+
+        // ==================== GAME CONTROL ====================
+        function startGame() {
+            if (gameStarted) return;
+
+            gameStarted = true;
+            gamePaused = false;
+            startTime = Date.now();
+
+            document.getElementById('startBtn').textContent = '🎮 Bezig...';
+            document.getElementById('startBtn').disabled = true;
+
+            gameLoop();
+            updateTimer();
+        }
+
+        function resetGame() {
+            gameStarted = false;
+            gamePaused = false;
+            currentLevel = 1;
+            totalScore = 0;
+            totalTime = 0;
+            currentTime = 0;
+
+            document.getElementById('timer').textContent = '0.0';
+            document.getElementById('totalScore').textContent = '0';
+            document.getElementById('startBtn').textContent = '🎮 Start';
+            document.getElementById('startBtn').disabled = false;
+
+            hideAllModals();
+            updateUI();
+            initCurrentLevel();
             draw();
         }
 
-        function draw() {
-            // Clear canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw background elements
-            drawSky();
-            drawGround();
-            drawBarn();
-            drawTruck();
-
-            // Draw pigs
-            for (const pig of pigs) {
-                pig.draw();
-            }
-
-            if (!gameWon) {
-                requestAnimationFrame(draw);
+        function initCurrentLevel() {
+            switch(currentLevel) {
+                case 1: initLevel1(); break;
+                case 2: initLevel2(); break;
+                case 3: initLevel3(); break;
+                case 4: initLevel4(); break;
             }
         }
 
-        function checkTruckCollision(pig) {
-            const pigCenterX = pig.x + pig.width / 2;
-            const pigCenterY = pig.y + pig.height / 2;
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            return pigCenterX >= truckBed.x &&
-                   pigCenterX <= truckBed.x + truckBed.width &&
-                   pigCenterY >= truckBed.y &&
-                   pigCenterY <= truckBed.y + truckBed.height;
+            switch(currentLevel) {
+                case 1: drawLevel1(); break;
+                case 2: drawLevel2(); break;
+                case 3: drawLevel3(); break;
+                case 4: drawLevel4(); break;
+            }
+        }
+
+        function gameLoop() {
+            if (!gameStarted || gamePaused) return;
+
+            switch(currentLevel) {
+                case 2: updateLevel2(); break;
+                case 4: updateLevel4(); break;
+            }
+
+            // Level 3 pig spawning
+            if (currentLevel === 3 && Math.random() < 0.02) {
+                spawnProcessPig();
+            }
+
+            draw();
+            requestAnimationFrame(gameLoop);
         }
 
         function updateTimer() {
-            if (gameStarted && !gameWon) {
-                currentTime = (Date.now() - startTime) / 1000;
-                document.getElementById('timer').textContent = currentTime.toFixed(2);
-                requestAnimationFrame(updateTimer);
-            }
+            if (!gameStarted || gamePaused) return;
+
+            currentTime = (Date.now() - startTime) / 1000;
+            document.getElementById('timer').textContent = currentTime.toFixed(1);
+
+            requestAnimationFrame(updateTimer);
         }
 
-        function winGame() {
-            gameWon = true;
-            const finalTime = currentTime.toFixed(2);
-            document.getElementById('finalTime').textContent = finalTime;
-            document.getElementById('winMessage').style.display = 'block';
+        function levelComplete() {
+            gamePaused = true;
 
-            // Check for new record
-            if (!highScore || parseFloat(finalTime) < parseFloat(highScore)) {
-                highScore = finalTime;
-                localStorage.setItem('bigcoinHighScore', finalTime);
-                document.getElementById('highscore').textContent = `🏆 Beste tijd: ${finalTime}s`;
-                document.getElementById('newRecord').style.display = 'block';
+            const levelTime = currentTime;
+            const levelScore = Math.max(1000 - Math.floor(levelTime * 10), 100);
+            totalScore += levelScore;
+            totalTime += levelTime;
+
+            document.getElementById('totalScore').textContent = totalScore;
+            document.getElementById('modalTime').textContent = levelTime.toFixed(1);
+            document.getElementById('modalScore').textContent = levelScore;
+
+            if (currentLevel === 4) {
+                // Game complete!
+                document.getElementById('finalTotalTime').textContent = totalTime.toFixed(1);
+                document.getElementById('finalScore').textContent = totalScore;
+
+                if (!highScore || totalScore > parseInt(highScore)) {
+                    highScore = totalScore;
+                    localStorage.setItem('bigcoinHighScore2', totalScore);
+                    document.getElementById('highscore').textContent = `🏆 Beste totaalscore: ${totalScore} pts`;
+                    document.getElementById('newRecordText').style.display = 'block';
+                } else {
+                    document.getElementById('newRecordText').style.display = 'none';
+                }
+
+                document.getElementById('finalModal').style.display = 'flex';
             } else {
-                document.getElementById('newRecord').style.display = 'none';
+                const nextLevelNames = {
+                    1: "A50 Snelweg",
+                    2: "Slachterij Boxtel",
+                    3: "BBQ Veghel"
+                };
+                document.getElementById('modalTitle').textContent = `🎉 Level ${currentLevel} Compleet!`;
+                document.getElementById('modalText').textContent = `Volgende: ${nextLevelNames[currentLevel]}`;
+                document.getElementById('levelModal').style.display = 'flex';
             }
         }
 
-        // Mouse events
-        canvas.addEventListener('mousedown', (e) => {
-            if (!gameStarted || gameWon) return;
-
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
-            // Check if clicking on a pig (reverse order to get top pig)
-            for (let i = pigs.length - 1; i >= 0; i--) {
-                if (!pigs[i].loaded && pigs[i].contains(x, y)) {
-                    draggingPig = pigs[i];
-                    offsetX = x - pigs[i].x;
-                    offsetY = y - pigs[i].y;
-
-                    // Move pig to end of array (draw on top)
-                    pigs.splice(i, 1);
-                    pigs.push(draggingPig);
-                    break;
-                }
-            }
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
-            if (!draggingPig) return;
-
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
-            draggingPig.x = x - offsetX;
-            draggingPig.y = y - offsetY;
-        });
-
-        canvas.addEventListener('mouseup', () => {
-            if (draggingPig && checkTruckCollision(draggingPig)) {
-                draggingPig.loaded = true;
-                loadedPigs++;
-                document.getElementById('pigCount').textContent = loadedPigs;
-
-                if (loadedPigs === totalPigCount) {
-                    winGame();
-                }
-            }
-            draggingPig = null;
-        });
-
-        canvas.addEventListener('mouseleave', () => {
-            draggingPig = null;
-        });
-
-        // Touch events for mobile
-        canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (!gameStarted || gameWon) return;
-
-            const rect = canvas.getBoundingClientRect();
-            const touch = e.touches[0];
-            const x = touch.clientX - rect.left;
-            const y = touch.clientY - rect.top;
-
-            for (let i = pigs.length - 1; i >= 0; i--) {
-                if (!pigs[i].loaded && pigs[i].contains(x, y)) {
-                    draggingPig = pigs[i];
-                    offsetX = x - pigs[i].x;
-                    offsetY = y - pigs[i].y;
-                    pigs.splice(i, 1);
-                    pigs.push(draggingPig);
-                    break;
-                }
-            }
-        });
-
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            if (!draggingPig) return;
-
-            const rect = canvas.getBoundingClientRect();
-            const touch = e.touches[0];
-            const x = touch.clientX - rect.left;
-            const y = touch.clientY - rect.top;
-
-            draggingPig.x = x - offsetX;
-            draggingPig.y = y - offsetY;
-        });
-
-        canvas.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            if (draggingPig && checkTruckCollision(draggingPig)) {
-                draggingPig.loaded = true;
-                loadedPigs++;
-                document.getElementById('pigCount').textContent = loadedPigs;
-
-                if (loadedPigs === totalPigCount) {
-                    winGame();
-                }
-            }
-            draggingPig = null;
-        });
-
-        // Button events
-        document.getElementById('startBtn').addEventListener('click', () => {
-            if (!gameStarted) {
-                gameStarted = true;
-                startTime = Date.now();
-                updateTimer();
-                document.getElementById('startBtn').textContent = '🎮 Spel loopt...';
-                document.getElementById('startBtn').disabled = true;
-            }
-        });
-
-        document.getElementById('resetBtn').addEventListener('click', () => {
+        function gameOver(message) {
+            gamePaused = true;
             gameStarted = false;
-            currentTime = 0;
-            document.getElementById('timer').textContent = '0.00';
-            document.getElementById('startBtn').textContent = '🎮 Start Spel';
-            document.getElementById('startBtn').disabled = false;
-            initGame();
+
+            document.getElementById('gameOverText').textContent = message;
+            document.getElementById('gameOverScore').textContent = totalScore;
+            document.getElementById('gameOverModal').style.display = 'flex';
+        }
+
+        function nextLevel() {
+            hideAllModals();
+            currentLevel++;
+            gamePaused = false;
+            startTime = Date.now();
+
+            updateUI();
+            initCurrentLevel();
+            gameLoop();
+            updateTimer();
+        }
+
+        function hideAllModals() {
+            document.getElementById('levelModal').style.display = 'none';
+            document.getElementById('gameOverModal').style.display = 'none';
+            document.getElementById('finalModal').style.display = 'none';
+        }
+
+        // ==================== EVENT LISTENERS ====================
+        // Touch/Mouse handlers
+        function handleStart(e) {
+            if (!gameStarted || gamePaused) return;
+            e.preventDefault();
+
+            const coords = getCanvasCoords(e);
+
+            if (currentLevel === 1) {
+                for (let i = pigs.length - 1; i >= 0; i--) {
+                    if (!pigs[i].loaded && pigs[i].contains(coords.x, coords.y)) {
+                        draggingPig = pigs[i];
+                        offsetX = coords.x - pigs[i].x;
+                        offsetY = coords.y - pigs[i].y;
+                        pigs.splice(i, 1);
+                        pigs.push(draggingPig);
+                        break;
+                    }
+                }
+            } else if (currentLevel === 2) {
+                if (coords.x < canvas.width / 2) {
+                    truckLane = Math.max(0, truckLane - 1);
+                } else {
+                    truckLane = Math.min(2, truckLane + 1);
+                }
+            } else if (currentLevel === 3) {
+                for (let i = pigsToProcess.length - 1; i >= 0; i--) {
+                    if (pigsToProcess[i].contains(coords.x, coords.y)) {
+                        pigsToProcess[i].processed = true;
+                        pigsToProcess[i].flash = 1;
+                        processedPigs++;
+                        document.getElementById('progress').textContent = processedPigs;
+
+                        setTimeout(() => {
+                            pigsToProcess.splice(i, 1);
+                        }, 100);
+
+                        if (processedPigs >= targetProcessed) {
+                            levelComplete();
+                        }
+                        break;
+                    }
+                }
+            } else if (currentLevel === 4) {
+                for (const item of grillItems) {
+                    if (item.contains(coords.x, coords.y)) {
+                        item.flip();
+                        break;
+                    }
+                }
+            }
+        }
+
+        function handleMove(e) {
+            if (!draggingPig || currentLevel !== 1) return;
+            e.preventDefault();
+
+            const coords = getCanvasCoords(e);
+            draggingPig.x = coords.x - offsetX;
+            draggingPig.y = coords.y - offsetY;
+            draw();
+        }
+
+        function handleEnd(e) {
+            if (currentLevel === 1 && draggingPig) {
+                const pigCenterX = draggingPig.x + draggingPig.width / 2;
+                const pigCenterY = draggingPig.y + draggingPig.height / 2;
+
+                if (pigCenterX >= truckBed.x && pigCenterX <= truckBed.x + truckBed.width &&
+                    pigCenterY >= truckBed.y && pigCenterY <= truckBed.y + truckBed.height) {
+                    draggingPig.loaded = true;
+                    loadedPigs++;
+                    document.getElementById('progress').textContent = loadedPigs;
+
+                    if (loadedPigs >= levels[1].target) {
+                        levelComplete();
+                    }
+                }
+                draggingPig = null;
+                draw();
+            }
+        }
+
+        // Keyboard for level 2
+        document.addEventListener('keydown', (e) => {
+            if (currentLevel !== 2 || !gameStarted || gamePaused) return;
+
+            if (e.key === 'ArrowLeft' || e.key === 'a') {
+                truckLane = Math.max(0, truckLane - 1);
+            } else if (e.key === 'ArrowRight' || e.key === 'd') {
+                truckLane = Math.min(2, truckLane + 1);
+            }
         });
 
-        document.getElementById('winMessage').addEventListener('click', () => {
-            document.getElementById('winMessage').style.display = 'none';
-        });
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('mouseup', handleEnd);
+        canvas.addEventListener('mouseleave', handleEnd);
 
-        // Initialize game
-        initGame();
+        canvas.addEventListener('touchstart', handleStart, { passive: false });
+        canvas.addEventListener('touchmove', handleMove, { passive: false });
+        canvas.addEventListener('touchend', handleEnd, { passive: false });
+
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('resetBtn').addEventListener('click', resetGame);
+        document.getElementById('nextLevelBtn').addEventListener('click', nextLevel);
+        document.getElementById('retryBtn').addEventListener('click', resetGame);
+        document.getElementById('playAgainBtn').addEventListener('click', resetGame);
+
+        // Initialize
+        updateUI();
+        initLevel1();
+        draw();
     </script>
 </body>
 </html>
