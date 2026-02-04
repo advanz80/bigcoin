@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐷 Bigcoin - Laad de Biggen!</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #87CEEB 0%, #98FB98 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #8B4513;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            color: #556B2F;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+
+        .game-info {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            color: #2F4F4F;
+        }
+
+        .game-info span {
+            background: rgba(255,255,255,0.8);
+            padding: 10px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        #gameCanvas {
+            border: 4px solid #8B4513;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            cursor: grab;
+            background: #90EE90;
+        }
+
+        #gameCanvas:active {
+            cursor: grabbing;
+        }
+
+        .buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        #startBtn {
+            background: linear-gradient(145deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        #resetBtn {
+            background: linear-gradient(145deg, #ff9800, #f57c00);
+            color: white;
+        }
+
+        .instructions {
+            margin-top: 20px;
+            background: rgba(255,255,255,0.9);
+            padding: 15px 25px;
+            border-radius: 10px;
+            max-width: 600px;
+            text-align: center;
+            color: #333;
+        }
+
+        .highscore {
+            margin-top: 15px;
+            background: linear-gradient(145deg, #FFD700, #FFA500);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            color: #8B4513;
+        }
+
+        .win-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(145deg, #4CAF50, #8BC34A);
+            color: white;
+            padding: 40px 60px;
+            border-radius: 20px;
+            font-size: 1.5em;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            z-index: 1000;
+            display: none;
+        }
+
+        .win-message h2 {
+            font-size: 2em;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🐷 BIGCOIN 🚛</h1>
+    <p class="subtitle">Laad alle biggen zo snel mogelijk in de vrachtwagen!</p>
+
+    <div class="game-info">
+        <span>⏱️ Tijd: <strong id="timer">0.00</strong>s</span>
+        <span>🐷 Biggen: <strong id="pigCount">0</strong> / <strong id="totalPigs">10</strong></span>
+    </div>
+
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
+
+    <div class="buttons">
+        <button id="startBtn">🎮 Start Spel</button>
+        <button id="resetBtn">🔄 Opnieuw</button>
+    </div>
+
+    <div class="highscore" id="highscore">🏆 Beste tijd: --</div>
+
+    <div class="instructions">
+        <strong>Hoe te spelen:</strong> Sleep de biggen 🐷 naar de vrachtwagen 🚛 aan de rechterkant.
+        Probeer zo snel mogelijk alle biggen te laden!
+    </div>
+
+    <div class="win-message" id="winMessage">
+        <h2>🎉 Gefeliciteerd! 🎉</h2>
+        <p>Alle biggen zijn geladen!</p>
+        <p>Jouw tijd: <strong id="finalTime">0.00</strong> seconden</p>
+        <p id="newRecord" style="color: #FFD700; display: none;">🏆 NIEUW RECORD! 🏆</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game state
+        let pigs = [];
+        let truck = { x: 620, y: 200, width: 160, height: 200 };
+        let truckBed = { x: 640, y: 250, width: 100, height: 140 };
+        let draggingPig = null;
+        let offsetX, offsetY;
+        let gameStarted = false;
+        let gameWon = false;
+        let startTime = 0;
+        let currentTime = 0;
+        let loadedPigs = 0;
+        let highScore = localStorage.getItem('bigcoinHighScore') || null;
+        let totalPigCount = 10;
+
+        // Update highscore display
+        if (highScore) {
+            document.getElementById('highscore').textContent = `🏆 Beste tijd: ${parseFloat(highScore).toFixed(2)}s`;
+        }
+
+        // Pig class
+        class Pig {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 60;
+                this.height = 50;
+                this.loaded = false;
+                this.wobble = Math.random() * Math.PI * 2;
+                this.wobbleSpeed = 0.05 + Math.random() * 0.03;
+            }
+
+            draw() {
+                if (this.loaded) return;
+
+                ctx.save();
+                this.wobble += this.wobbleSpeed;
+                const wobbleOffset = Math.sin(this.wobble) * 2;
+
+                // Body (pink oval)
+                ctx.fillStyle = '#FFB6C1';
+                ctx.beginPath();
+                ctx.ellipse(this.x + this.width/2, this.y + this.height/2 + wobbleOffset,
+                           this.width/2, this.height/2.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#FF69B4';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Head
+                ctx.fillStyle = '#FFB6C1';
+                ctx.beginPath();
+                ctx.ellipse(this.x + this.width - 5, this.y + this.height/2 + wobbleOffset,
+                           18, 15, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Snout
+                ctx.fillStyle = '#FFA0B4';
+                ctx.beginPath();
+                ctx.ellipse(this.x + this.width + 8, this.y + this.height/2 + wobbleOffset,
+                           10, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#FF69B4';
+                ctx.stroke();
+
+                // Nostrils
+                ctx.fillStyle = '#FF69B4';
+                ctx.beginPath();
+                ctx.ellipse(this.x + this.width + 5, this.y + this.height/2 - 2 + wobbleOffset, 2, 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(this.x + this.width + 11, this.y + this.height/2 - 2 + wobbleOffset, 2, 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Eyes
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(this.x + this.width - 2, this.y + this.height/2 - 8 + wobbleOffset, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Eye shine
+                ctx.fillStyle = '#FFF';
+                ctx.beginPath();
+                ctx.arc(this.x + this.width - 1, this.y + this.height/2 - 9 + wobbleOffset, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Ears
+                ctx.fillStyle = '#FFB6C1';
+                ctx.beginPath();
+                ctx.ellipse(this.x + this.width - 15, this.y + this.height/2 - 18 + wobbleOffset,
+                           8, 10, -0.3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#FF69B4';
+                ctx.stroke();
+
+                // Tail (curly)
+                ctx.strokeStyle = '#FF69B4';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(this.x + 5, this.y + this.height/2 + wobbleOffset);
+                for (let i = 0; i < 3; i++) {
+                    ctx.quadraticCurveTo(
+                        this.x - 5 - i*5, this.y + this.height/2 - 8 + wobbleOffset,
+                        this.x - 5 - i*5, this.y + this.height/2 + wobbleOffset
+                    );
+                    ctx.quadraticCurveTo(
+                        this.x - 5 - i*5, this.y + this.height/2 + 8 + wobbleOffset,
+                        this.x - 10 - i*5, this.y + this.height/2 + wobbleOffset
+                    );
+                }
+                ctx.stroke();
+
+                // Legs
+                ctx.fillStyle = '#FFB6C1';
+                ctx.strokeStyle = '#FF69B4';
+                ctx.lineWidth = 2;
+
+                // Front legs
+                ctx.fillRect(this.x + this.width - 25, this.y + this.height - 5 + wobbleOffset, 8, 15);
+                ctx.strokeRect(this.x + this.width - 25, this.y + this.height - 5 + wobbleOffset, 8, 15);
+                ctx.fillRect(this.x + this.width - 40, this.y + this.height - 5 + wobbleOffset, 8, 15);
+                ctx.strokeRect(this.x + this.width - 40, this.y + this.height - 5 + wobbleOffset, 8, 15);
+
+                // Hooves
+                ctx.fillStyle = '#8B4513';
+                ctx.fillRect(this.x + this.width - 26, this.y + this.height + 7 + wobbleOffset, 10, 5);
+                ctx.fillRect(this.x + this.width - 41, this.y + this.height + 7 + wobbleOffset, 10, 5);
+
+                ctx.restore();
+            }
+
+            contains(px, py) {
+                return px >= this.x && px <= this.x + this.width + 20 &&
+                       py >= this.y && py <= this.y + this.height + 15;
+            }
+        }
+
+        function drawTruck() {
+            // Truck bed (back)
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(truck.x, truck.y + 50, truck.width, truck.height - 50);
+
+            // Truck bed inner (where pigs go)
+            ctx.fillStyle = '#DEB887';
+            ctx.fillRect(truckBed.x, truckBed.y, truckBed.width, truckBed.height);
+
+            // Truck bed borders
+            ctx.strokeStyle = '#5D3A1A';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(truck.x, truck.y + 50, truck.width, truck.height - 50);
+
+            // Wooden slats
+            ctx.strokeStyle = '#8B4513';
+            ctx.lineWidth = 3;
+            for (let i = 0; i < 4; i++) {
+                ctx.beginPath();
+                ctx.moveTo(truck.x, truck.y + 80 + i * 40);
+                ctx.lineTo(truck.x + truck.width, truck.y + 80 + i * 40);
+                ctx.stroke();
+            }
+
+            // Truck cabin
+            ctx.fillStyle = '#E53935';
+            ctx.fillRect(truck.x + truck.width - 60, truck.y + truck.height - 80, 60, 80);
+
+            // Cabin window
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(truck.x + truck.width - 50, truck.y + truck.height - 70, 40, 30);
+
+            // Window reflection
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.beginPath();
+            ctx.moveTo(truck.x + truck.width - 50, truck.y + truck.height - 70);
+            ctx.lineTo(truck.x + truck.width - 30, truck.y + truck.height - 70);
+            ctx.lineTo(truck.x + truck.width - 50, truck.y + truck.height - 50);
+            ctx.fill();
+
+            // Wheels
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(truck.x + 40, truck.y + truck.height + 10, 25, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(truck.x + truck.width - 30, truck.y + truck.height + 10, 25, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Wheel caps
+            ctx.fillStyle = '#666';
+            ctx.beginPath();
+            ctx.arc(truck.x + 40, truck.y + truck.height + 10, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(truck.x + truck.width - 30, truck.y + truck.height + 10, 12, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw loaded pig count in truck
+            ctx.fillStyle = '#8B4513';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`🐷 ${loadedPigs}`, truckBed.x + truckBed.width/2, truckBed.y + truckBed.height/2 + 10);
+        }
+
+        function drawGround() {
+            // Grass
+            ctx.fillStyle = '#7CFC00';
+            ctx.fillRect(0, 420, canvas.width, 80);
+
+            // Road
+            ctx.fillStyle = '#555';
+            ctx.fillRect(550, 420, 250, 80);
+
+            // Road lines
+            ctx.strokeStyle = '#FFF';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([20, 20]);
+            ctx.beginPath();
+            ctx.moveTo(550, 460);
+            ctx.lineTo(800, 460);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Fence
+            ctx.strokeStyle = '#8B4513';
+            ctx.lineWidth = 4;
+            for (let i = 0; i < 12; i++) {
+                // Fence posts
+                ctx.fillStyle = '#A0522D';
+                ctx.fillRect(30 + i * 45, 380, 8, 50);
+            }
+            // Fence rails
+            ctx.beginPath();
+            ctx.moveTo(20, 390);
+            ctx.lineTo(520, 390);
+            ctx.moveTo(20, 410);
+            ctx.lineTo(520, 410);
+            ctx.stroke();
+        }
+
+        function drawSky() {
+            // Sun
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(100, 80, 40, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Sun rays
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 3;
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.moveTo(100 + Math.cos(angle) * 50, 80 + Math.sin(angle) * 50);
+                ctx.lineTo(100 + Math.cos(angle) * 65, 80 + Math.sin(angle) * 65);
+                ctx.stroke();
+            }
+
+            // Clouds
+            drawCloud(200, 60);
+            drawCloud(400, 90);
+            drawCloud(600, 50);
+        }
+
+        function drawCloud(x, y) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.beginPath();
+            ctx.arc(x, y, 25, 0, Math.PI * 2);
+            ctx.arc(x + 25, y - 10, 20, 0, Math.PI * 2);
+            ctx.arc(x + 50, y, 25, 0, Math.PI * 2);
+            ctx.arc(x + 25, y + 5, 20, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawBarn() {
+            // Barn body
+            ctx.fillStyle = '#B22222';
+            ctx.fillRect(20, 280, 120, 140);
+
+            // Barn roof
+            ctx.fillStyle = '#8B0000';
+            ctx.beginPath();
+            ctx.moveTo(10, 280);
+            ctx.lineTo(80, 220);
+            ctx.lineTo(150, 280);
+            ctx.fill();
+
+            // Barn door
+            ctx.fillStyle = '#5D3A1A';
+            ctx.fillRect(55, 340, 50, 80);
+
+            // Door cross
+            ctx.strokeStyle = '#3D2A1A';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(55, 340);
+            ctx.lineTo(105, 420);
+            ctx.moveTo(105, 340);
+            ctx.lineTo(55, 420);
+            ctx.stroke();
+
+            // Barn window
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(80, 260, 15, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#5D3A1A';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(80, 245);
+            ctx.lineTo(80, 275);
+            ctx.moveTo(65, 260);
+            ctx.lineTo(95, 260);
+            ctx.stroke();
+        }
+
+        function initGame() {
+            pigs = [];
+            loadedPigs = 0;
+            gameWon = false;
+            document.getElementById('winMessage').style.display = 'none';
+            document.getElementById('pigCount').textContent = '0';
+
+            // Create pigs at random positions in the field
+            for (let i = 0; i < totalPigCount; i++) {
+                let x, y;
+                let validPosition = false;
+
+                while (!validPosition) {
+                    x = 150 + Math.random() * 350;
+                    y = 180 + Math.random() * 180;
+                    validPosition = true;
+
+                    // Check overlap with other pigs
+                    for (const pig of pigs) {
+                        const dx = x - pig.x;
+                        const dy = y - pig.y;
+                        if (Math.sqrt(dx*dx + dy*dy) < 70) {
+                            validPosition = false;
+                            break;
+                        }
+                    }
+                }
+
+                pigs.push(new Pig(x, y));
+            }
+
+            draw();
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw background elements
+            drawSky();
+            drawGround();
+            drawBarn();
+            drawTruck();
+
+            // Draw pigs
+            for (const pig of pigs) {
+                pig.draw();
+            }
+
+            if (!gameWon) {
+                requestAnimationFrame(draw);
+            }
+        }
+
+        function checkTruckCollision(pig) {
+            const pigCenterX = pig.x + pig.width / 2;
+            const pigCenterY = pig.y + pig.height / 2;
+
+            return pigCenterX >= truckBed.x &&
+                   pigCenterX <= truckBed.x + truckBed.width &&
+                   pigCenterY >= truckBed.y &&
+                   pigCenterY <= truckBed.y + truckBed.height;
+        }
+
+        function updateTimer() {
+            if (gameStarted && !gameWon) {
+                currentTime = (Date.now() - startTime) / 1000;
+                document.getElementById('timer').textContent = currentTime.toFixed(2);
+                requestAnimationFrame(updateTimer);
+            }
+        }
+
+        function winGame() {
+            gameWon = true;
+            const finalTime = currentTime.toFixed(2);
+            document.getElementById('finalTime').textContent = finalTime;
+            document.getElementById('winMessage').style.display = 'block';
+
+            // Check for new record
+            if (!highScore || parseFloat(finalTime) < parseFloat(highScore)) {
+                highScore = finalTime;
+                localStorage.setItem('bigcoinHighScore', finalTime);
+                document.getElementById('highscore').textContent = `🏆 Beste tijd: ${finalTime}s`;
+                document.getElementById('newRecord').style.display = 'block';
+            } else {
+                document.getElementById('newRecord').style.display = 'none';
+            }
+        }
+
+        // Mouse events
+        canvas.addEventListener('mousedown', (e) => {
+            if (!gameStarted || gameWon) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Check if clicking on a pig (reverse order to get top pig)
+            for (let i = pigs.length - 1; i >= 0; i--) {
+                if (!pigs[i].loaded && pigs[i].contains(x, y)) {
+                    draggingPig = pigs[i];
+                    offsetX = x - pigs[i].x;
+                    offsetY = y - pigs[i].y;
+
+                    // Move pig to end of array (draw on top)
+                    pigs.splice(i, 1);
+                    pigs.push(draggingPig);
+                    break;
+                }
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!draggingPig) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            draggingPig.x = x - offsetX;
+            draggingPig.y = y - offsetY;
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (draggingPig && checkTruckCollision(draggingPig)) {
+                draggingPig.loaded = true;
+                loadedPigs++;
+                document.getElementById('pigCount').textContent = loadedPigs;
+
+                if (loadedPigs === totalPigCount) {
+                    winGame();
+                }
+            }
+            draggingPig = null;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            draggingPig = null;
+        });
+
+        // Touch events for mobile
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!gameStarted || gameWon) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+
+            for (let i = pigs.length - 1; i >= 0; i--) {
+                if (!pigs[i].loaded && pigs[i].contains(x, y)) {
+                    draggingPig = pigs[i];
+                    offsetX = x - pigs[i].x;
+                    offsetY = y - pigs[i].y;
+                    pigs.splice(i, 1);
+                    pigs.push(draggingPig);
+                    break;
+                }
+            }
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!draggingPig) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+
+            draggingPig.x = x - offsetX;
+            draggingPig.y = y - offsetY;
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (draggingPig && checkTruckCollision(draggingPig)) {
+                draggingPig.loaded = true;
+                loadedPigs++;
+                document.getElementById('pigCount').textContent = loadedPigs;
+
+                if (loadedPigs === totalPigCount) {
+                    winGame();
+                }
+            }
+            draggingPig = null;
+        });
+
+        // Button events
+        document.getElementById('startBtn').addEventListener('click', () => {
+            if (!gameStarted) {
+                gameStarted = true;
+                startTime = Date.now();
+                updateTimer();
+                document.getElementById('startBtn').textContent = '🎮 Spel loopt...';
+                document.getElementById('startBtn').disabled = true;
+            }
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            gameStarted = false;
+            currentTime = 0;
+            document.getElementById('timer').textContent = '0.00';
+            document.getElementById('startBtn').textContent = '🎮 Start Spel';
+            document.getElementById('startBtn').disabled = false;
+            initGame();
+        });
+
+        document.getElementById('winMessage').addEventListener('click', () => {
+            document.getElementById('winMessage').style.display = 'none';
+        });
+
+        // Initialize game
+        initGame();
+    </script>
+</body>
+</html>
